@@ -26,7 +26,7 @@
         <form id="addForm" class="add-form" autocomplete="off">
           <label class="field">
             <span>Название</span>
-            <input id="nameInput" type="text" placeholder="Например: Jailbreak #1" required />
+            <input id="nameInput" type="text" placeholder="Например: Jailbreak #1" required autofocus />
           </label>
           <label class="field">
             <span>Цена (необязательно)</span>
@@ -36,6 +36,14 @@
             <span>Заметка</span>
             <input id="noteInput" type="text" placeholder="Кому сдана, срок и т.п." />
           </label>
+          <label class="field">
+            <span>Статус</span>
+            <div class="switch" title="Сдана / Не сдана">
+              <input id="rentedInput" type="checkbox" />
+              <span class="switch-ui"></span>
+              <span class="switch-text" data-off="Не сдана" data-on="Сдана"></span>
+            </div>
+          </label>
           <button type="submit" class="primary">Добавить</button>
         </form>
 
@@ -43,6 +51,7 @@
           <button class="chip active" data-filter="all">Все</button>
           <button class="chip" data-filter="rented">Сдана</button>
           <button class="chip" data-filter="free">Не сдана</button>
+          <input id="searchInput" type="text" placeholder="Поиск..." class="search-input" />
           <div class="spacer"></div>
           <div class="stats" id="stats"></div>
         </div>
@@ -74,4 +83,3 @@
     <script src="./script.js"></script>
   </body>
   </html>
-

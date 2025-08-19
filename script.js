@@ -9,6 +9,7 @@ let items = loadJson(STORAGE_KEYS.items, []);
 let earningsTotal = loadNumber(STORAGE_KEYS.earnings, 0);
 let earningsHistory = loadJson(STORAGE_KEYS.history, []);
 let filter = 'all';
+let searchQuery = '';
 
 /** DOM */
 const listEl = document.getElementById('list');
@@ -16,8 +17,10 @@ const statsEl = document.getElementById('stats');
 const nameInput = document.getElementById('nameInput');
 const priceInput = document.getElementById('priceInput');
 const noteInput = document.getElementById('noteInput');
+const rentedInput = document.getElementById('rentedInput');
 const addForm = document.getElementById('addForm');
 const chips = Array.from(document.querySelectorAll('.chip'));
+const searchInput = document.getElementById('searchInput');
 
 const earningsTotalEl = document.getElementById('earningsTotal');
 const earningsForm = document.getElementById('earningsForm');
@@ -66,11 +69,20 @@ function render() {
   statsEl.textContent = `Всего: ${total} · Сдана: ${rented} · Не сдана: ${free}`;
 
   // list
-  const filtered = items.filter(i => {
-    if (filter === 'rented') return i.rented;
-    if (filter === 'free') return !i.rented;
-    return true;
-  });
+  const filtered = items
+    .filter(i => {
+      if (filter === 'rented') return i.rented;
+      if (filter === 'free') return !i.rented;
+      return true;
+    })
+    .filter(i => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        String(i.name).toLowerCase().includes(q) ||
+        String(i.note || '').toLowerCase().includes(q)
+      );
+    });
   listEl.innerHTML = '';
   for (const item of filtered) {
     listEl.appendChild(renderItem(item));
@@ -85,10 +97,19 @@ function renderItem(item) {
   const li = document.createElement('li');
   li.className = 'item';
 
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = item.rented;
-  checkbox.addEventListener('change', () => toggleRented(item.id));
+  // Toggle switch
+  const switchWrap = document.createElement('label');
+  switchWrap.className = 'switch';
+  const hidden = document.createElement('input');
+  hidden.type = 'checkbox';
+  hidden.checked = item.rented;
+  hidden.addEventListener('change', () => toggleRented(item.id));
+  const ui = document.createElement('span');
+  ui.className = 'switch-ui';
+  const text = document.createElement('span');
+  text.className = 'switch-text';
+  text.setAttribute('data-off', 'Не сдана');
+  text.setAttribute('data-on', 'Сдана');
 
   const nameWrap = document.createElement('div');
   const nameSpan = document.createElement('div');
@@ -114,7 +135,11 @@ function renderItem(item) {
   removeBtn.title = 'Удалить';
   removeBtn.addEventListener('click', () => removeItem(item.id));
 
-  li.appendChild(checkbox);
+  switchWrap.appendChild(hidden);
+  switchWrap.appendChild(ui);
+  switchWrap.appendChild(text);
+
+  li.appendChild(switchWrap);
   li.appendChild(nameWrap);
   li.appendChild(price);
   li.appendChild(status);
@@ -143,8 +168,8 @@ function formatMoney(n) {
 }
 
 /** Mutations */
-function addItem(name, price, note) {
-  items.unshift({ id: uid(), name, price: price ?? 0, note: note ?? '', rented: false });
+function addItem(name, price, note, rented) {
+  items.unshift({ id: uid(), name, price: price ?? 0, note: note ?? '', rented: Boolean(rented) });
   save();
   render();
 }
@@ -187,7 +212,8 @@ addForm.addEventListener('submit', (e) => {
   if (!name) return;
   const price = priceInput.value ? Number(String(priceInput.value).replace(',', '.')) : 0;
   const note = noteInput.value.trim();
-  addItem(name, Number.isFinite(price) ? price : 0, note);
+  const rented = rentedInput && rentedInput.checked;
+  addItem(name, Number.isFinite(price) ? price : 0, note, rented);
   addForm.reset();
   nameInput.focus();
 });
@@ -197,9 +223,19 @@ chips.forEach(chip => {
     chips.forEach(c => c.classList.remove('active'));
     chip.classList.add('active');
     filter = chip.dataset.filter;
+    localStorage.setItem('privates.filter', filter);
     render();
   });
 });
+
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    searchQuery = searchInput.value.trim();
+    render();
+  });
+}
+
+// earnings
 
 earningsForm.addEventListener('submit', (e) => {
   e.preventDefault();
@@ -261,4 +297,11 @@ resetAllBtn.addEventListener('click', () => {
 });
 
 // init
+const persistedFilter = localStorage.getItem('privates.filter');
+if (persistedFilter) {
+  filter = persistedFilter;
+  chips.forEach(c => c.classList.remove('active'));
+  const chip = chips.find(c => c.dataset.filter === filter);
+  if (chip) chip.classList.add('active');
+}
 render();
