@@ -85,11 +85,6 @@ function renderItem(item) {
   const li = document.createElement('li');
   li.className = 'item';
 
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = item.rented;
-  checkbox.addEventListener('change', () => toggleRented(item.id));
-
   const nameWrap = document.createElement('div');
   const nameSpan = document.createElement('div');
   nameSpan.className = 'name';
@@ -104,9 +99,24 @@ function renderItem(item) {
   price.className = 'price';
   price.textContent = item.price ? `+${formatMoney(item.price)}` : '';
 
-  const status = document.createElement('div');
-  status.className = 'status ' + (item.rented ? 'rented' : 'free');
-  status.textContent = item.rented ? 'Сдана' : 'Не сдана';
+  const statusWrap = document.createElement('div');
+  statusWrap.className = 'status-wrap';
+  const statusText = document.createElement('div');
+  statusText.className = 'status-text ' + (item.rented ? 'rented' : 'free');
+  statusText.textContent = item.rented ? 'Сдана' : 'Не сдана';
+  const toggleLabel = document.createElement('label');
+  toggleLabel.className = 'switch';
+  const toggleInput = document.createElement('input');
+  toggleInput.type = 'checkbox';
+  toggleInput.checked = item.rented;
+  toggleInput.setAttribute('aria-label', 'Сдана');
+  const toggleSpan = document.createElement('span');
+  toggleSpan.className = 'slider';
+  toggleInput.addEventListener('change', () => toggleRented(item.id));
+  toggleLabel.appendChild(toggleInput);
+  toggleLabel.appendChild(toggleSpan);
+  statusWrap.appendChild(statusText);
+  statusWrap.appendChild(toggleLabel);
 
   const removeBtn = document.createElement('button');
   removeBtn.className = 'remove';
@@ -114,10 +124,9 @@ function renderItem(item) {
   removeBtn.title = 'Удалить';
   removeBtn.addEventListener('click', () => removeItem(item.id));
 
-  li.appendChild(checkbox);
   li.appendChild(nameWrap);
   li.appendChild(price);
-  li.appendChild(status);
+  li.appendChild(statusWrap);
   li.appendChild(removeBtn);
   return li;
 }
