@@ -16,6 +16,7 @@ const statsEl = document.getElementById('stats');
 const nameInput = document.getElementById('nameInput');
 const priceInput = document.getElementById('priceInput');
 const noteInput = document.getElementById('noteInput');
+const rentedInput = document.getElementById('rentedInput');
 const addForm = document.getElementById('addForm');
 const chips = Array.from(document.querySelectorAll('.chip'));
 
@@ -85,10 +86,24 @@ function renderItem(item) {
   const li = document.createElement('li');
   li.className = 'item';
 
-  const checkbox = document.createElement('input');
-  checkbox.type = 'checkbox';
-  checkbox.checked = item.rented;
-  checkbox.addEventListener('change', () => toggleRented(item.id));
+  const toggle = document.createElement('label');
+  toggle.className = 'toggle small';
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  input.checked = item.rented;
+  input.addEventListener('change', () => toggleRented(item.id));
+  const slider = document.createElement('span');
+  slider.className = 'slider';
+  const on = document.createElement('span');
+  on.className = 'slider-label on';
+  on.textContent = 'Сдано';
+  const off = document.createElement('span');
+  off.className = 'slider-label off';
+  off.textContent = 'Не сдано';
+  slider.appendChild(on);
+  slider.appendChild(off);
+  toggle.appendChild(input);
+  toggle.appendChild(slider);
 
   const nameWrap = document.createElement('div');
   const nameSpan = document.createElement('div');
@@ -114,7 +129,7 @@ function renderItem(item) {
   removeBtn.title = 'Удалить';
   removeBtn.addEventListener('click', () => removeItem(item.id));
 
-  li.appendChild(checkbox);
+  li.appendChild(toggle);
   li.appendChild(nameWrap);
   li.appendChild(price);
   li.appendChild(status);
@@ -143,8 +158,8 @@ function formatMoney(n) {
 }
 
 /** Mutations */
-function addItem(name, price, note) {
-  items.unshift({ id: uid(), name, price: price ?? 0, note: note ?? '', rented: false });
+function addItem(name, price, note, rented) {
+  items.unshift({ id: uid(), name, price: price ?? 0, note: note ?? '', rented: Boolean(rented) });
   save();
   render();
 }
@@ -187,7 +202,8 @@ addForm.addEventListener('submit', (e) => {
   if (!name) return;
   const price = priceInput.value ? Number(String(priceInput.value).replace(',', '.')) : 0;
   const note = noteInput.value.trim();
-  addItem(name, Number.isFinite(price) ? price : 0, note);
+  const rented = rentedInput && rentedInput.checked;
+  addItem(name, Number.isFinite(price) ? price : 0, note, rented);
   addForm.reset();
   nameInput.focus();
 });
