@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Учёт приваток и дохода</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <h1>Мои приватки</h1>
+      <div class="header-actions">
+        <button id="exportBtn" class="secondary">Экспорт</button>
+        <input id="importFile" type="file" accept="application/json" hidden />
+        <button id="importBtn" class="secondary">Импорт</button>
+        <button id="resetAllBtn" class="danger">Сбросить всё</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <h2>Добавить приватку</h2>
+        <form id="addForm" class="add-form" autocomplete="off">
+          <label class="field">
+            <span>Название</span>
+            <input id="nameInput" type="text" placeholder="Например: Jailbreak #1" required />
+          </label>
+          <label class="field">
+            <span>Цена (необязательно)</span>
+            <input id="priceInput" type="number" step="0.01" inputmode="decimal" placeholder="Напр.: 20" />
+          </label>
+          <label class="field">
+            <span>Заметка</span>
+            <input id="noteInput" type="text" placeholder="Кому сдана, срок и т.п." />
+          </label>
+          <button type="submit" class="primary">Добавить</button>
+        </form>
+
+        <div class="filters">
+          <button class="chip active" data-filter="all">Все</button>
+          <button class="chip" data-filter="rented">Сдана</button>
+          <button class="chip" data-filter="free">Не сдана</button>
+          <div class="spacer"></div>
+          <div class="stats" id="stats"></div>
+        </div>
+
+        <ul id="list" class="list"></ul>
+      </section>
+
+      <aside class="panel earnings">
+        <h2>Доход</h2>
+        <div class="total" id="earningsTotal">0</div>
+        <form id="earningsForm" class="earnings-form" autocomplete="off">
+          <input id="deltaInput" type="text" placeholder="+20 или -5" />
+          <button type="submit" class="primary">Применить</button>
+          <button type="button" id="add20" class="secondary">+20</button>
+          <button type="button" id="sub5" class="secondary">-5</button>
+          <button type="button" id="resetEarnings" class="danger">Сбросить</button>
+        </form>
+        <details class="history">
+          <summary>История операций</summary>
+          <ul id="historyList"></ul>
+        </details>
+      </aside>
+    </main>
+
+    <footer class="app-footer">
+      <span>Данные сохраняются локально (localStorage).</span>
+    </footer>
+
+    <script src="./script.js"></script>
+  </body>
+  </html>
+
