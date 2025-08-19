@@ -17,6 +17,7 @@ const statsEl = document.getElementById('stats');
 const nameInput = document.getElementById('nameInput');
 const priceInput = document.getElementById('priceInput');
 const noteInput = document.getElementById('noteInput');
+const dueInput = document.getElementById('dueInput');
 const rentedInput = document.getElementById('rentedInput');
 const addForm = document.getElementById('addForm');
 const chips = Array.from(document.querySelectorAll('.chip'));
@@ -120,6 +121,15 @@ function renderItem(item) {
   noteSpan.textContent = item.note || '';
   nameWrap.appendChild(nameSpan);
   nameWrap.appendChild(noteSpan);
+  if (item.dueAt) {
+    const dueSpan = document.createElement('div');
+    dueSpan.className = 'due' + ((item.rented && Date.now() > item.dueAt) ? ' overdue' : '');
+    const dueDate = new Date(item.dueAt);
+    const dateStr = dueDate.toLocaleDateString();
+    const timeStr = dueDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    dueSpan.textContent = `До: ${dateStr} ${timeStr}`;
+    nameWrap.appendChild(dueSpan);
+  }
 
   const price = document.createElement('div');
   price.className = 'price';
@@ -168,8 +178,8 @@ function formatMoney(n) {
 }
 
 /** Mutations */
-function addItem(name, price, note, rented) {
-  items.unshift({ id: uid(), name, price: price ?? 0, note: note ?? '', rented: Boolean(rented) });
+function addItem(name, price, note, rented, dueAt) {
+  items.unshift({ id: uid(), name, price: price ?? 0, note: note ?? '', rented: Boolean(rented), dueAt: dueAt ?? null });
   save();
   render();
 }
@@ -213,7 +223,8 @@ addForm.addEventListener('submit', (e) => {
   const price = priceInput.value ? Number(String(priceInput.value).replace(',', '.')) : 0;
   const note = noteInput.value.trim();
   const rented = rentedInput && rentedInput.checked;
-  addItem(name, Number.isFinite(price) ? price : 0, note, rented);
+  const dueAt = dueInput && dueInput.value ? new Date(dueInput.value).getTime() : null;
+  addItem(name, Number.isFinite(price) ? price : 0, note, rented, dueAt);
   addForm.reset();
   nameInput.focus();
 });
