@@ -8,14 +8,24 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   </head>
   <body>
     <header class="app-header">
-      <h1>Мои приватки</h1>
+      <div class="header-left">
+        <h1>Мои приватки</h1>
+        <div class="theme-toggle">
+          <button id="themeToggle" class="theme-btn" title="Переключить тему">
+            <span class="theme-icon">🌙</span>
+          </button>
+        </div>
+      </div>
       <div class="header-actions">
         <button id="exportBtn" class="secondary">Экспорт</button>
+        <button id="exportExcelBtn" class="secondary">Excel</button>
         <input id="importFile" type="file" accept="application/json" hidden />
         <button id="importBtn" class="secondary">Импорт</button>
+        <button id="backupBtn" class="secondary">Резерв</button>
         <button id="resetAllBtn" class="danger">Сбросить всё</button>
       </div>
     </header>
@@ -29,8 +39,23 @@
             <input id="nameInput" type="text" placeholder="Например: Jailbreak #1" required autofocus />
           </label>
           <label class="field">
+            <span>Категория</span>
+            <select id="categoryInput">
+              <option value="">Выберите категорию</option>
+              <option value="jailbreak">Jailbreak</option>
+              <option value="modded">Модифицированные</option>
+              <option value="vanilla">Ванильные</option>
+              <option value="custom">Кастомные</option>
+              <option value="other">Другое</option>
+            </select>
+          </label>
+          <label class="field">
             <span>Цена (необязательно)</span>
             <input id="priceInput" type="number" step="0.01" inputmode="decimal" placeholder="Напр.: 20" />
+          </label>
+          <label class="field">
+            <span>Дата сдачи</span>
+            <input id="dueDateInput" type="date" />
           </label>
           <label class="field">
             <span>Заметка</span>
@@ -51,6 +76,15 @@
           <button class="chip active" data-filter="all">Все</button>
           <button class="chip" data-filter="rented">Сдана</button>
           <button class="chip" data-filter="free">Не сдана</button>
+          <button class="chip" data-filter="overdue">Просрочены</button>
+          <select id="categoryFilter" class="category-filter">
+            <option value="">Все категории</option>
+            <option value="jailbreak">Jailbreak</option>
+            <option value="modded">Модифицированные</option>
+            <option value="vanilla">Ванильные</option>
+            <option value="custom">Кастомные</option>
+            <option value="other">Другое</option>
+          </select>
           <input id="searchInput" type="text" placeholder="Поиск..." class="search-input" />
           <div class="spacer"></div>
           <div class="stats" id="stats"></div>
@@ -59,27 +93,108 @@
         <ul id="list" class="list"></ul>
       </section>
 
-      <aside class="panel earnings">
-        <h2>Доход</h2>
-        <div class="total" id="earningsTotal">0</div>
-        <form id="earningsForm" class="earnings-form" autocomplete="off">
-          <input id="deltaInput" type="text" placeholder="+20 или -5" />
-          <button type="submit" class="primary">Применить</button>
-          <button type="button" id="add20" class="secondary">+20</button>
-          <button type="button" id="sub5" class="secondary">-5</button>
-          <button type="button" id="resetEarnings" class="danger">Сбросить</button>
-        </form>
-        <details class="history">
-          <summary>История операций</summary>
-          <ul id="historyList"></ul>
-        </details>
+      <aside class="sidebar">
+        <div class="panel earnings">
+          <h2>Доход</h2>
+          <div class="total" id="earningsTotal">0</div>
+          <div class="earnings-chart">
+            <canvas id="earningsChart"></canvas>
+          </div>
+          <form id="earningsForm" class="earnings-form" autocomplete="off">
+            <input id="deltaInput" type="text" placeholder="+20 или -5" />
+            <button type="submit" class="primary">Применить</button>
+            <button type="button" id="add20" class="secondary">+20</button>
+            <button type="button" id="sub5" class="secondary">-5</button>
+            <button type="button" id="resetEarnings" class="danger">Сбросить</button>
+          </form>
+          <details class="history">
+            <summary>История операций</summary>
+            <ul id="historyList"></ul>
+          </details>
+        </div>
+
+        <div class="panel analytics">
+          <h2>Аналитика</h2>
+          <div class="analytics-grid">
+            <div class="analytics-item">
+              <span class="analytics-label">Приваток сегодня</span>
+              <span class="analytics-value" id="todayCount">0</span>
+            </div>
+            <div class="analytics-item">
+              <span class="analytics-label">Доход за месяц</span>
+              <span class="analytics-value" id="monthlyEarnings">0</span>
+            </div>
+            <div class="analytics-item">
+              <span class="analytics-label">Средняя цена</span>
+              <span class="analytics-value" id="avgPrice">0</span>
+            </div>
+            <div class="analytics-item">
+              <span class="analytics-label">Просрочено</span>
+              <span class="analytics-value" id="overdueCount">0</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel notifications">
+          <h2>Уведомления</h2>
+          <div id="notificationsList" class="notifications-list">
+            <!-- Уведомления будут добавляться динамически -->
+          </div>
+        </div>
       </aside>
     </main>
 
     <footer class="app-footer">
       <span>Данные сохраняются локально (localStorage).</span>
+      <span class="footer-links">
+        <button id="backupCloudBtn" class="link-btn">Резерв в облако</button>
+        <button id="restoreCloudBtn" class="link-btn">Восстановить</button>
+      </span>
     </footer>
+
+    <!-- Модальное окно для редактирования -->
+    <div id="editModal" class="modal" hidden>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Редактировать приватку</h3>
+          <button id="closeModal" class="close-btn">×</button>
+        </div>
+        <form id="editForm" class="edit-form">
+          <label class="field">
+            <span>Название</span>
+            <input id="editNameInput" type="text" required />
+          </label>
+          <label class="field">
+            <span>Категория</span>
+            <select id="editCategoryInput">
+              <option value="">Выберите категорию</option>
+              <option value="jailbreak">Jailbreak</option>
+              <option value="modded">Модифицированные</option>
+              <option value="vanilla">Ванильные</option>
+              <option value="custom">Кастомные</option>
+              <option value="other">Другое</option>
+            </select>
+          </label>
+          <label class="field">
+            <span>Цена</span>
+            <input id="editPriceInput" type="number" step="0.01" />
+          </label>
+          <label class="field">
+            <span>Дата сдачи</span>
+            <input id="editDueDateInput" type="date" />
+          </label>
+          <label class="field">
+            <span>Заметка</span>
+            <input id="editNoteInput" type="text" />
+          </label>
+          <div class="modal-actions">
+            <button type="submit" class="primary">Сохранить</button>
+            <button type="button" class="secondary" id="cancelEdit">Отмена</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script src="./script.js"></script>
   </body>
-  </html>
+</html>

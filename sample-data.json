@@ -1,0 +1,77 @@
+{
+  "items": [
+    {
+      "id": "sample1",
+      "name": "Jailbreak #1",
+      "category": "jailbreak",
+      "price": 25.50,
+      "dueDate": "2024-12-25",
+      "note": "Сдана Ивану, срок до 25 декабря",
+      "rented": true,
+      "createdAt": "2024-12-20T10:00:00.000Z"
+    },
+    {
+      "id": "sample2",
+      "name": "Модифицированный сервер",
+      "category": "modded",
+      "price": 30.00,
+      "dueDate": "2024-12-30",
+      "note": "Ожидает сдачи",
+      "rented": false,
+      "createdAt": "2024-12-21T14:30:00.000Z"
+    },
+    {
+      "id": "sample3",
+      "name": "Ванильный мир",
+      "category": "vanilla",
+      "price": 20.00,
+      "dueDate": "2024-12-22",
+      "note": "Просрочена!",
+      "rented": false,
+      "createdAt": "2024-12-15T09:15:00.000Z"
+    },
+    {
+      "id": "sample4",
+      "name": "Кастомный плагин",
+      "category": "custom",
+      "price": 15.75,
+      "dueDate": "2024-12-28",
+      "note": "Разработка завершена",
+      "rented": false,
+      "createdAt": "2024-12-22T16:45:00.000Z"
+    },
+    {
+      "id": "sample5",
+      "name": "Другой проект",
+      "category": "other",
+      "price": 0,
+      "dueDate": null,
+      "note": "Бесплатный проект",
+      "rented": true,
+      "createdAt": "2024-12-18T11:20:00.000Z"
+    }
+  ],
+  "earningsTotal": 75.50,
+  "earningsHistory": [
+    {
+      "ts": 1703160000000,
+      "delta": 25.50,
+      "reason": "Jailbreak #1"
+    },
+    {
+      "ts": 1703246400000,
+      "delta": 30.00,
+      "reason": "Модифицированный сервер"
+    },
+    {
+      "ts": 1703332800000,
+      "delta": 20.00,
+      "reason": "Ванильный мир"
+    },
+    {
+      "ts": 1703419200000,
+      "delta": -10.00,
+      "reason": "Возврат"
+    }
+  ]
+}
