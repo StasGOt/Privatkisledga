@@ -371,8 +371,56 @@ function render() {
     });
     
   listEl.innerHTML = '';
-  for (const item of filtered) {
-    listEl.appendChild(renderItem(item));
+  
+  if (filtered.length === 0) {
+    if (items.length === 0) {
+      // Нет приваток вообще - показываем приветствие
+      const welcomeEl = document.createElement('div');
+      welcomeEl.className = 'welcome-message';
+      welcomeEl.innerHTML = `
+        <div class="welcome-content">
+          <h3>🎉 Добро пожаловать в Приватки!</h3>
+          <p>Это приложение поможет вам управлять приватками и отслеживать доходы.</p>
+          <div class="welcome-features">
+            <div class="feature">
+              <span class="feature-icon">📝</span>
+              <span>Добавляйте приватки с категориями и ценами</span>
+            </div>
+            <div class="feature">
+              <span class="feature-icon">💰</span>
+              <span>Отслеживайте доходы и аналитику</span>
+            </div>
+            <div class="feature">
+              <span class="feature-icon">📅</span>
+              <span>Устанавливайте сроки и получайте уведомления</span>
+            </div>
+            <div class="feature">
+              <span class="feature-icon">📊</span>
+              <span>Анализируйте статистику и графики</span>
+            </div>
+          </div>
+          <p class="welcome-start">Начните с добавления первой приватки выше!</p>
+        </div>
+      `;
+      listEl.appendChild(welcomeEl);
+    } else if (searchQuery || categoryFilter || filter !== 'all') {
+      // Есть приватки, но фильтры ничего не нашли
+      const noResultsEl = document.createElement('div');
+      noResultsEl.className = 'no-results';
+      noResultsEl.innerHTML = `
+        <div class="no-results-content">
+          <span class="no-results-icon">🔍</span>
+          <h4>Ничего не найдено</h4>
+          <p>Попробуйте изменить фильтры или поисковый запрос</p>
+        </div>
+      `;
+      listEl.appendChild(noResultsEl);
+    }
+  } else {
+    // Показываем найденные приватки
+    for (const item of filtered) {
+      listEl.appendChild(renderItem(item));
+    }
   }
 
   // earnings
@@ -394,6 +442,7 @@ function render() {
 function renderItem(item) {
   const li = document.createElement('li');
   li.className = 'item';
+  li.setAttribute('data-item-id', item.id); // Добавляем атрибут для прокрутки
 
   // Toggle switch
   const switchWrap = document.createElement('label');
@@ -512,18 +561,57 @@ function closeEditModal() {
 
 /** Mutations */
 function addItem(name, category, price, dueDate, note, rented) {
-  items.unshift({ 
-    id: uid(), 
-    name, 
+  // Дополнительная валидация
+  if (!name || typeof name !== 'string') {
+    throw new Error('Название приватки обязательно и должно быть строкой');
+  }
+  
+  if (name.trim().length === 0) {
+    throw new Error('Название приватки не может быть пустым');
+  }
+  
+  if (name.length > 100) {
+    throw new Error('Название приватки слишком длинное (максимум 100 символов)');
+  }
+  
+  if (price !== null && (typeof price !== 'number' || !Number.isFinite(price))) {
+    throw new Error('Цена должна быть числом');
+  }
+  
+  if (price !== null && price < 0) {
+    throw new Error('Цена не может быть отрицательной');
+  }
+  
+  if (dueDate && !isValidDate(dueDate)) {
+    throw new Error('Некорректная дата');
+  }
+  
+  if (note && note.length > 500) {
+    throw new Error('Заметка слишком длинная (максимум 500 символов)');
+  }
+  
+  const newItem = {
+    id: uid(),
+    name: name.trim(),
     category: category || null,
-    price: price ?? 0, 
+    price: price ?? 0,
     dueDate: dueDate || null,
-    note: note ?? '', 
+    note: note ? note.trim() : '',
     rented: Boolean(rented),
     createdAt: new Date().toISOString()
-  });
+  };
+  
+  items.unshift(newItem);
   save();
   render();
+  
+  return newItem;
+}
+
+// Вспомогательная функция для проверки даты
+function isValidDate(dateString) {
+  const date = new Date(dateString);
+  return date instanceof Date && !isNaN(date);
 }
 
 function updateItem(id, name, category, price, dueDate, note) {
@@ -604,20 +692,68 @@ function exportToExcel() {
 }
 
 /** Events */
-addForm.addEventListener('submit', (e) => {
+addForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const name = nameInput.value.trim();
-  if (!name) return;
   
-  const category = categoryInput.value || null;
-  const price = priceInput.value ? Number(String(priceInput.value).replace(',', '.')) : 0;
-  const dueDate = dueDateInput.value || null;
-  const note = noteInput.value.trim();
-  const rented = rentedInput && rentedInput.checked;
+  const submitBtn = addForm.querySelector('button[type="submit"]');
+  const originalText = submitBtn.textContent;
   
-  addItem(name, category, Number.isFinite(price) ? price : 0, dueDate, note, rented);
-  addForm.reset();
-  nameInput.focus();
+  try {
+    // Показываем индикатор загрузки
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Добавляем...';
+    
+    const name = nameInput.value.trim();
+    if (!name) {
+      throw new Error('Пожалуйста, введите название приватки');
+    }
+    
+    const category = categoryInput.value || null;
+    const price = priceInput.value ? Number(String(priceInput.value).replace(',', '.')) : 0;
+    const dueDate = dueDateInput.value || null;
+    const note = noteInput.value.trim();
+    const rented = rentedInput && rentedInput.checked;
+    
+    // Проверяем корректность цены
+    if (priceInput.value && !Number.isFinite(price)) {
+      throw new Error('Пожалуйста, введите корректную цену');
+    }
+    
+    // Добавляем приватку
+    const newItem = addItem(name, category, price, dueDate, note, rented);
+    
+    // Очищаем форму
+    addForm.reset();
+    
+    // Показываем подтверждение
+    showNotification(`Приватка "${newItem.name}" успешно добавлена!`, 'success');
+    
+    // Прокручиваем к добавленной приватке
+    setTimeout(() => {
+      const addedItem = document.querySelector(`[data-item-id="${newItem.id}"]`);
+      if (addedItem) {
+        addedItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        addedItem.style.animation = 'highlight 2s ease-out';
+      }
+    }, 100);
+    
+  } catch (error) {
+    console.error('Ошибка при добавлении приватки:', error);
+    showNotification(error.message, 'error');
+    
+    // Возвращаем фокус на поле с ошибкой
+    if (error.message.includes('название')) {
+      nameInput.focus();
+    } else if (error.message.includes('цен')) {
+      priceInput.focus();
+    } else if (error.message.includes('дата')) {
+      dueDateInput.focus();
+    }
+  } finally {
+    // Восстанавливаем кнопку
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalText;
+  }
 });
 
 chips.forEach(chip => {
@@ -738,6 +874,53 @@ restoreCloudBtn.addEventListener('click', () => {
   alert('Функция восстановления из облака будет добавлена в следующей версии!');
 });
 
+/** Notifications */
+function showNotification(message, type = 'info') {
+  // Создаем временное уведомление
+  const notification = document.createElement('div');
+  notification.className = `temp-notification ${type}`;
+  notification.textContent = message;
+  
+  // Добавляем стили
+  notification.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--primary);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-weight: 500;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  `;
+  
+  if (type === 'success') {
+    notification.style.background = 'var(--success)';
+  } else if (type === 'error') {
+    notification.style.background = 'var(--danger)';
+  }
+  
+  document.body.appendChild(notification);
+  
+  // Показываем уведомление
+  setTimeout(() => {
+    notification.style.transform = 'translateX(0)';
+  }, 100);
+  
+  // Скрываем через 3 секунды
+  setTimeout(() => {
+    notification.style.transform = 'translateX(100%)';
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 300);
+  }, 3000);
+}
+
 // init
 const persistedFilter = localStorage.getItem('privates.filter');
 if (persistedFilter) {
@@ -748,4 +931,8 @@ if (persistedFilter) {
 }
 
 setTheme(currentTheme);
-render();
+
+// Добавляем небольшую задержку для корректной инициализации
+setTimeout(() => {
+  render();
+}, 100);
